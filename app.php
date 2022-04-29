@@ -6,7 +6,7 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET,PUT,POST,DELETE,PATCH,OPTIONS');
 header('Content-type: application/json');
 require_once('/var/www/classes/class.pages.php');
-require_once('/var/www/classes/class.broker-forms.php');
+require_once('/var/www/classes/class.app-forms.php');
 require_once('/var/www/classes/class.users.php');
 require_once('/var/www/classes/class.members.php');
 require_once('/var/www/classes/class.security.php');
@@ -70,8 +70,17 @@ case 'submit-quote':
                 case 'badmin':
                      $output=$F->getTestDashboard($data);
                      break;
-                case 'post-census-bad':
-                     $output=$F->postCensusBad($data);
+                case 'plan-list':
+                     $output=$F->getPlanList($data);
+                     break;
+                case 'addition-list':
+                     $output=$F->getAdditionList($data);
+                     break;
+                case 'termination-list':
+                     $output=$F->getTerminationList($data);
+                     break;
+                case 'member-list':
+                     $output=$F->getMemberList($data);
                      break;
 //-- 2
                 case 'admin-prospect-list':
@@ -88,50 +97,6 @@ case 'submit-quote':
                 case 'post-add-prospect':
                      $output=$F->postAddCompany($data,"");
                      break;
-                case 'post-edit-company':
-                case 'post-edit-prospect':
-                     $output=$F->postEditCompany($data,"");
-                     break;
-//-- 5 
-                case 'admin-quote-list':
-                case 'quote-list':
-                    $output=$F->getQuoteList($data);
-                     break;				
-//-- 6
-                case 'admin-enrolling-list':
-                case 'enrolling-list':
-                    $output=$F->getCompanyList($data,'enrolling');
-                     break;				
-//-- 7
-                case 'add-quote':
-                case 'add-quote-request':
-                    $output=$F->getQuoteRequestFormData($data);
-                     break;				
-//-- 8
-                case 'post-add-quote':
-                    $output=$F->postAddQuote($data);
-                     break;				
-                case 'post-add-quote-small':
-                    $output=$F->postAddQuoteSmall($data);
-                     break;				
-//-- 9
-                case 'quote-dashboard':
-                    $output=$F->getQuoteDashboard($data);
-                     break;				
-//-- 10
-                case 'edit-company':
-                    $output=$F->getEditCompany($data,"nua_company");
-                     break;				
-                case 'post-edit-quote':
-                    $output=$F->getEditQuote($data);
-                     break;				
-//-- 11
-                case 'post-add-quote-employee':
-                    $output=$F->getAddQuoteEmployee($data);
-                     break;				
-//-- 12
-                case 'post-edit-quote-employee':
-                    $output=$F->getEditQuoteEmployee($data);
 //-- 5 
                 case 'admin-quote-list':
                 case 'quote-list':

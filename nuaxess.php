@@ -93,11 +93,17 @@ case 'submit-quote':
 		case 'add-broker':
                 $output=$F->getAddBroker($data);
                 break;
+		case 'add-employee':
+                $output=$F->getAddEmployee($data);
+                break;
 		case 'post-add-broker':
                 $output=$F->postAddBroker($data);
                 break;
 		case 'post-edit-broker':
                 $output=$F->postEditBroker($data);
+                break;
+		case 'post-add-employer-user':
+                $output=$F->postAddEmployerUser($data);
                 break;
 		case 'post-broker-user':
                 $output=$F->postBrokerUser($data);
@@ -126,6 +132,12 @@ case 'submit-quote':
 		case 'post-activate-plan':
                 $output=$F->postActivatePlan($data);
                 break;	
+		case 'post-payment':
+                $output=$F->postPayment($data);
+                break;	
+		case 'plan-list':
+                $output=$F->getPlanList($data);
+                break;	
 		case 'add-client-plan':
                 $output=$F->getClientPlan($data);
                 break;	
@@ -137,6 +149,15 @@ case 'submit-quote':
                 break;	
 		case 'post-add-client-plan':
                 $output=$F->postClientPlan($data);
+                break;	
+		case 'edit-customer-payment':
+                $output=$F->getEditCompanyPayment($data);
+                break;	
+		case 'post-edit-customer-payment':
+                $output=$F->postEditCompanyPayment($data);
+                break;	
+		case 'post-delete-customer-payment':
+                $output=$F->postEditCompanyPayment($data);
                 break;	
 		case 'system-note-list':
                 $output=$F->getSystemNoteList($data);
@@ -302,6 +323,9 @@ case 'submit-quote':
                 break;
         case 'post-add-company':
                 $output=$F->postAddCompany($data,"company");
+                break;
+        case 'post-add-employee-new':
+                $output=$F->postAddEmployeeNew($data);
                 break;
         case 'post-add-employee':
                 $output=$F->postAdd($data,"nua_employee");

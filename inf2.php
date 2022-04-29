@@ -46,28 +46,34 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                 $display = "B";
 	}
 
-	$month_id = "2022-04";
+	$month_id = "2022-05";
+                $display = "F";
 
         if ($month_id=="2022-01") { $post['billing_date']="12/05/2021"; $post['due_date']="12/31/2021"; }
         if ($month_id=="2022-02") { $post['billing_date']="01/05/2022"; $post['due_date']="01/31/2022"; }
         if ($month_id=="2022-03") { $post['billing_date']="02/05/2022"; $post['due_date']="02/28/2022"; }
         if ($month_id=="2022-04") { $post['billing_date']="03/15/2022"; $post['due_date']="03/31/2022"; }
-        if ($month_id=="2022-05") { $post['billing_date']="04/01/2022"; $post['due_date']="04/30/2022"; }
+        if ($month_id=="2022-05") { $post['billing_date']="04/01/2022"; $post['due_date']="04/29/2022"; }
 
 
-        $sql="select * from nua_company_invoice where month_id = '" . $month_id . "' and company_id in (select id from nua_company where org_id = 17)";
+        $sql="select nua_company.id as id, grand_total, medical_total, dental_total, vision_total, add_total, adjustment_total, prev_total from nua_company_invoice, nua_company  where nua_company_invoice.company_id = nua_company.id and month_id = '" . $month_id . "' and nua_company.org_id = 17 order by nua_company.company_name";
         $grand=0;
         $medical=0;
         $dental=0;
         $vision=0;
         $add=0;
+        $prev=0;
+        $adj=0;
         $z=$X->sql($sql);
         foreach ($z as $a) {
-                $grand+=floatval(str_replace(',','',$a['grand_total']));
+              $grand+=floatval(str_replace(',','',$a['grand_total']));
                 $medical+=floatval(str_replace(',','',$a['medical_total']));
                 $dental+=floatval(str_replace(',','',$a['dental_total']));
                 $vision+=floatval(str_replace(',','',$a['vision_total']));
                 $add+=floatval(str_replace(',','',$a['add_total']));
+                $adj+=floatval(str_replace(',','',$a['adjustment_total']));
+		if ($a['id']==5906) $adj+=floatval(str_replace(',','',$a['grand_total']));
+                $prev+=floatval(str_replace(',','',$a['prev_total']));
         }
         $grand_total=number_format($grand,2);
         $medical_total=number_format($medical,2);
@@ -91,10 +97,10 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$pdf->Text(125,52,'Billing Date:');
 	$pdf->Text(125,57,'Payment Due Date:');
 
-	$pdf->Text(175,42,"IFHR-2022-04");
-	$pdf->Text(175,47,'APRIL');
-	$pdf->Text(175,52,'03/15/2022');
-	$pdf->Text(175,57,'03/31/2022');
+	$pdf->Text(175,42,"IFHR-2022-05");
+	$pdf->Text(175,47,'MAY');
+	$pdf->Text(175,52,'04/15/2022');
+	$pdf->Text(175,57,'04/30/2022');
 
 	$pos+=20;
 
@@ -108,17 +114,23 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
         $dental_count=0;
         $vision_count=0;
         $add_count=0;
+        $prev_count=0;
 
-	$sql="select plan_type from nua_monthly_member_census where month_id = '" . $month_id . "' and ";
+	$sql="select plan_type from nua_monthly_member_census where coverage_price <> '' and eff_dt <> term_dt and billed_month_id = '" . $month_id . "' and month_id = '" . $month_id . "' and ";
 	$sql.=" company_id in (select id from nua_company where org_id = 17)";
         $tt=$X->sql($sql);
         foreach($tt as $t) {
             if ($t['plan_type']=="*MEDICAL*") $medical_count++;
-            if ($t['plan_type']=="*DENTAL*") $medical_count++;
+            if ($t['plan_type']=="*DENTAL*") $dental_count++;
             if ($t['plan_type']=="*VISION*") $vision_count++;
             if ($t['plan_type']=="*ADD*") $add_count++;
             if ($t['plan_type']=="*LIFE*") $add_count++;
-
+	}	
+	$sql="select plan_type from nua_monthly_member_census where coverage_price <> '' and eff_dt <> term_dt and billed_month_id = '" . $month_id . "' and month_id <> billed_month_id and ";
+	$sql.=" company_id in (select id from nua_company where org_id = 17)";
+        $tt=$X->sql($sql);
+        foreach($tt as $t) {
+            $prev_count++;
 	}	
 
 	$pdf->SetLineWidth(.50);
@@ -140,6 +152,14 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$pdf->Text(10,$pos, "ADD/Life");
 	$pdf->Text(135,$pos,$add_count);
 	$pdf->Text(179,$pos,"$" . number_format($add,2));
+	$pos+=7;
+	$pdf->Text(10,$pos, "Unbilled Prior Month");
+	$pdf->Text(135,$pos,$prev_count);
+	$pdf->Text(179,$pos,"$" . number_format($prev,2));
+	$pos+=7;
+	$pdf->Text(10,$pos, "Adjustments");
+	$pdf->Text(135,$pos,"---");
+	$pdf->Text(175,$pos,"$" . number_format("-18871.22",2));
 	$pos=$pos+7;
 	$pdf->SetLineWidth(.50);
 	$pdf->Line(10,$pos,200,$pos);
@@ -147,7 +167,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$pdf->Text(135,$pos,'GRAND TOTAL');
 	$pdf->Text(175,$pos,"$" . $grand_total);
 
-	$pos=135+($line_count*7);
+	$pos=155+($line_count*7);
 
         $pdf->Text(30,$pos,'ACH Instructions:');
         $pos+=5;
@@ -183,43 +203,62 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
         $sql="select * from nua_company_invoice where month_id = '" . $month_id . "' and company_id in (select id from nua_company where org_id = 17) order by company_name";
         $x=$X->sql($sql);
 
+	        $pdf->SetFont('Times','',10);
 	$pdf->Text(10,$pos,'COMPANY NAME');
-	$pdf->Text(120,$pos,'MEDICAL');
-	        $pdf->Text(150,$pos,'OTHER');
-	        $pdf->Text(175,$pos,'TOTAL');
+	        $pdf->SetFont('Times','',9);
+	        $pdf->Text(90,$pos,'MEDICAL');
+	        $pdf->Text(110,$pos,'DENTAL');
+	        $pdf->Text(130,$pos,'VISION');
+	        $pdf->Text(145,$pos,'ADD/LIFE');
+	        $pdf->Text(165,$pos,'PRIOR');
+	        $pdf->Text(185,$pos,'TOTAL');
 	$pos=$pos+7;
 	$pdf->SetLineWidth(.50);
 	$pdf->Line(10,$pos,200,$pos);
 	$last="XXX";
 	foreach($x as $d) {
-		$other=floatval(str_replace(",","",$d['dental_total']))+floatval(str_replace(",","",$d['vision_total']))+floatval(str_replace(",","",$d['add_total']));
-	   $pos+=5;
-$sql="select infinity_id from nua_company where id = " . $d['company_id'];
-$z=$X->sql($sql);
+	   $other=floatval(str_replace(",","",$d['dental_total']))+
+                  floatval(str_replace(",","",$d['vision_total']))+
+                  floatval(str_replace(",","",$d['add_total']));
 
-if ($z[0]['infinity_id']!=substr($d['company_name'],0,4)) {
-	$pdf->Text(10,$pos,$z[0]['infinity_id'] . '-' . substr(strtoupper($d['company_name']),0,40));
-} else {
-	$pdf->Text(10,$pos,substr(strtoupper($d['company_name']),0,30));
-}
-	   $pdf->Text(125,$pos,"$" . $d['medical_total']);
-	   $pdf->Text(150,$pos,"$" . number_format($other,2));	   
-	   $pdf->Text(175,$pos,"$" . $d['grand_total']);	   
-           if ($pos>275) {
+	          $pos+=5;
+                  $sql="select infinity_id from nua_company where id = " . $d['company_id'];
+                  $z=$X->sql($sql);
+		  $clientId=$z[0]['infinity_id'];
+		  $sql="select clientName from inf_client where clientId = '" . $clientId . "'";
+                  $z=$X->sql($sql);
+
+//                  if ($z[0]['infinity_id']!=substr($d['company_name'],0,4)) {
+	              $pdf->Text(10,$pos,substr(strtoupper($z[0]['clientName']),0,30));
+//                  } else {
+//	              $pdf->Text(10,$pos,substr(strtoupper($d['company_name']),0,20));
+//                  }
+
+   	   $pdf->Text(90,$pos,"$" . $d['medical_total']);
+	   $pdf->Text(110,$pos,"$" . $d['dental_total']);	   
+	   $pdf->Text(130,$pos,"$" . $d['vision_total']);	   
+	   $pdf->Text(145,$pos,"$" . $d['add_total']);	   
+	   $pdf->Text(165,$pos,"$" . number_format($d['prev_total'],2));	   
+	   $pdf->Text(185,$pos,"$" . $d['grand_total']);	   
+           if ($pos>255) {
 		$pdf->AddPage();
  	        $pdf->SetFont('Arial','B',15);
 	        $pdf->Text(125,32,"Monthly Master Statement");		
-	        $pdf->SetFont('Times','',12);
+	        $pdf->SetFont('Times','',10);
 	        $pdf->Text(10,42,"INFINITI HR CORP");
 	        $pdf->Text(10,47,"3905 NATIONAL DRIVE");
 	        $pdf->Text(10,52,"BURTONSVILLE, MD 20866");
 	        $pos=68;
 		$pdf->Text(10,$pos,"COMPANY DETAIL (CONTINUED)");
 		$pos=$pos+10;
+	        $pdf->SetFont('Times','',9);
 	        $pdf->Text(10,$pos,'COMPANY NAME');
-	        $pdf->Text(120,$pos,'MEDICAL');
-	        $pdf->Text(150,$pos,'OTHER');
-	        $pdf->Text(175,$pos,'TOTAL');
+	        $pdf->Text(90,$pos,'MEDICAL');
+	        $pdf->Text(110,$pos,'DENTAL');
+	        $pdf->Text(130,$pos,'VISION');
+	        $pdf->Text(145,$pos,'ADD/LIFE');
+	        $pdf->Text(165,$pos,'PRIOR');
+	        $pdf->Text(185,$pos,'TOTAL');
 		$pos=$pos+7;
 		$pdf->SetLineWidth(.50);
 		$pdf->Line(10,$pos,200,$pos);			

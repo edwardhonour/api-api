@@ -54,7 +54,6 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                 $sql="select * from nua_company where invoicing = 'Y' order by id";
 		 if ($display=='E') {
                     $sql="select * from nua_company where invoicing = 'Y' and id in (select company_id from nua_company_invoice where month_id = '" . $month_id . "' and email_sent = 'N' and ready_to_send = 'Y') order by id";
-	            $sql="select * from nua_company where invoicing = 'Y' and ready_to_send = 'Y' and flag_eft = 'No' order by id";
                  }
                 
 	} else {
@@ -73,7 +72,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 		     
 		     $flag_53=$company['flag_53'];
 		     $flag_current=$company['flag_current'];
-		     $flag_eft=$company['flag_eft'];
+		     $flag_eft=$current['flag_eft'];
 
                      $output['company']=$company;
                      $post=array();
@@ -162,8 +161,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                                     }
 				   if ($c['coverage_level']=="EE"||$c['coverage_level']=="SI") {
                                           if ($c['coverage_price']=="") $c['coverage_price'] = $p['ee_price'];
-                                          if ($c['coverage_price']=="0") $c['coverage_price'] = $p['ee_price'];
-                                          //if ($c['coverage_price']=="") $c['coverage_price'] = "0";
+                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
                                           $ee_total+=floatval($c['coverage_price']);
                                           $grand_total+=floatval($c['coverage_price']);
                                           $sub_total+=floatval($c['coverage_price']);
@@ -177,8 +175,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                                    }
 				   if ($c['coverage_level']=="EC"||$c['coverage_level']=="EC2") {
                                           if ($c['coverage_price']=="") $c['coverage_price'] = $p['eec_price'];
-                                          if ($c['coverage_price']=="0") $c['coverage_price'] = $p['eec_price'];
-                                          //if ($c['coverage_price']=="") $c['coverage_price'] = "0";
+                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
                                           $eec_total+=floatval($c['coverage_price']);
                                           $grand_total+=floatval($c['coverage_price']);
                                           $sub_total+=floatval($c['coverage_price']);
@@ -192,8 +189,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                                    }
 				   if ($c['coverage_level']=="ES"||$c['coverage_level']=="ES") {
                                           if ($c['coverage_price']=="") $c['coverage_price'] = $p['ees_price'];
-                                          if ($c['coverage_price']=="0") $c['coverage_price'] = $p['ees_price'];
-                                          //if ($c['coverage_price']=="") $c['coverage_price'] = "0";
+                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
                                           $ees_total+=floatval($c['coverage_price']);
                                           $grand_total+=floatval($c['coverage_price']);
                                           $sub_total+=floatval($c['coverage_price']);
@@ -207,8 +203,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                                    }
 				   if ($c['coverage_level']=="FA"||$c['coverage_level']=="FAM") {
                                           if ($c['coverage_price']=="") $c['coverage_price'] = $p['fam_price'];
-                                          if ($c['coverage_price']=="0") $c['coverage_price'] = $p['fam_price'];
-                                          //if ($c['coverage_price']=="") $c['coverage_price'] = "0";
+                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
                                           $fam_total+=floatval($c['coverage_price']);
                                           $grand_total+=floatval($c['coverage_price']);
                                           $sub_total+=floatval($c['coverage_price']);
@@ -336,8 +331,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$pdf = new PDF();
 	$pdf->AliasNbPages();
         $invite_total_float=0;
-
-	if ($flag_53=='No'&&$flag_eft=='No') {
+	if ($flag_53=='No') {
 
 		$pdf->AddPage();
 		$pdf->SetFont('Arial','B',15);
@@ -345,119 +339,43 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 		$pdf->Text(10,42,$invoice['company_name']);
 		$pdf->Text(10,47,$invoice['billing_address'] . ' ' . $company['invoice_suite']);
 		$pdf->Text(10,52,$invoice['billing_city'] . ', ' . $invoice['billing_state'] . ' ' . $invoice['billing_zip']);
-		$pos=62;
+		$pos=77;
 		$pdf->SetLineWidth(3);
 		$pdf->Line(10,$pos,200,$pos);
-		$pdf->SetFont('Arial','B',23);
+		$pdf->SetFont('Arial','B',24);
 		$pos+=15;
-		$pdf->Text(10,$pos,"IMPORTANT: NEW REMITTANCE INFORMATION");
+		$pdf->Text(10,$pos,"NEW REMIT TO PAYMENT INFORMATION");
 		$pos+=15;
-		$pdf->Text(10,$pos,"In order to properly credit your account all ");
-		$pos+=12;
-		$pdf->Text(10,$pos,"payments must be made to");
+		$pdf->Text(10,$pos,"In order to properly credit your account ");
 		$pos+=15;
-		$pdf->Text(50,$pos,"Nuaxess Account Services");
-		$pos+=12;
-		$pdf->Text(50,$pos,"5/3 (Fifth-Third) Bank Account");
-		$pos+=12;
+		$pdf->Text(10,$pos,"all payments must be made toPayment Program!");
+		$pos+=15;
 		$pdf->Line(10,$pos,200,$pos);
-		$pdf->Line(10,$pos,200,$pos);
-	$pos+=12;
+	$pos+=15;
 	$pdf->SetFont('Times','',16);
-	$pdf->Text(10,$pos,"REMINDER:  Please put invoice number(s) in the memo or notes on all forms ");
+	$pdf->Text(10,$pos,"Never worry about you premium payments being made on time by enrolling in ");
 	$pos+=8;
-	$pdf->Text(10,$pos,"of payment to ensure proper credit is applied to your account. ");
-	$pos+=14;
-	$pdf->Text(10,$pos,"REMIT TO: ");
-	$pdf->Text(60,$pos,"Nuaxess Account Services: ");
+	$pdf->Text(10,$pos,"the Automatic Premium Payment Program. ");
+	$pos+=18;
+	$pdf->Text(10,$pos,"Each month your premiums will be auto debited from your bank on the payment ");
 	$pos+=8;
-	$pdf->Text(60,$pos,"ACH Routing: #071923909");
+	$pdf->Text(10,$pos,"due date.  You will continue to receive your invoice each month via email ");
 	$pos+=8;
-	$pdf->Text(60,$pos,"Wire Routing: #042000314");
+	$pdf->Text(10,$pos,"but the payment process will be automatic.");
+	$pos+=18;
+	$pdf->Text(10,$pos,"Just fill out and sign the ACH payment authorization form attached to this");
 	$pos+=8;
-	$pdf->Text(60,$pos,"Account: #7242568934");
-	$pos+=14;
-	$pdf->Text(10,$pos,"IF MAILING CHECKS: ");
-	$pos+=8;
-	$pdf->Text(10,$pos,"Make payable to: ");
-	$pdf->Text(60,$pos,"Nuaxess Account Services ");
-	$pos+=8;
-	$pdf->Text(10,$pos,"Mail to: ");
-	$pdf->Text(60,$pos,"Nuaxess Account Services ");
-	$pos+=8;
-	$pdf->Text(60,$pos,"Lock Box #235149");
-	$pos+=8;
-	$pdf->Text(60,$pos,"PO Box 85149");
-	$pos+=8;
-	$pdf->Text(60,$pos,"Chicago, IL 60689-5149");
-	$pos+=14;
-	$pdf->Text(10,$pos,"WE NOW OFFER AUTOMATIC PAYMENT PROGRAMS");
-	$pos+=8;
-	$pdf->Text(10,$pos,"Contact: billing@mynuaxess.com    OR CALL: (844) 999-5777");
+	$pdf->Text(10,$pos," statement, scan it, and email it back to billing@MyNuAxess.com");
+	$pos+=18;
+	$pdf->Text(10,$pos,"");
+	$pdf->Text(10,$pos,"We will contact you to confirm your enrollment.");
+	$pos+=28;
+	$pdf->SetFont('Times','',12);
+	$pdf->Text(10,$pos,"Note: Your payment due date many be adjusted to a date a few days later to comply with bank scheduling");
+	$pos+=5;
+	$pdf->Text(10,$pos,"requirments.");
 
 	}
-
-
-	if ($flag_53=='No'&&$flag_current=='No'&&$flag_eft=='XXX') {
-
-		$pdf->AddPage();
-		$pdf->SetFont('Arial','B',15);
-		$pdf->SetFont('Times','',12);
-		$pdf->Text(10,42,$invoice['company_name']);
-		$pdf->Text(10,47,$invoice['billing_address'] . ' ' . $company['invoice_suite']);
-		$pdf->Text(10,52,$invoice['billing_city'] . ', ' . $invoice['billing_state'] . ' ' . $invoice['billing_zip']);
-		$pos=62;
-		$pdf->SetLineWidth(3);
-		$pdf->Line(10,$pos,200,$pos);
-		$pdf->SetFont('Arial','B',23);
-		$pos+=15;
-		$pdf->Text(10,$pos,"WARNING: YOUR ACCOUNT IS PAST DUE!");
-		$pos+=15;
-		$pdf->Text(10,$pos,"Your coverage will be terminated effective ");
-		$pos+=12;
-		$pdf->Text(10,$pos,"31 days from your last payment unless you");
-		$pos+=12;
-		$pdf->Text(10,$pos,"CONTACT US AT: 844-999-5777");
-		$pos+=12;
-		$pdf->Line(10,$pos,200,$pos);
-		$pdf->Line(10,$pos,200,$pos);
-
-         	$pos+=12;
-	        $pdf->SetFont('Times','',16);
-	        $pdf->Text(10,$pos,"REMINDER:  Please put invoice number(s) in the memo or notes on all forms ");
-	$pos+=8;
-	$pdf->Text(10,$pos,"of payment to ensure proper credit is applied to your account. ");
-	$pos+=14;
-	$pdf->Text(10,$pos,"REMIT TO: ");
-	$pdf->Text(60,$pos,"Nuaxess Account Services: ");
-	$pos+=8;
-	$pdf->Text(60,$pos,"ACH Routing: #071923909");
-	$pos+=8;
-	$pdf->Text(60,$pos,"Wire Routing: #042000314");
-	$pos+=8;
-	$pdf->Text(60,$pos,"Account: #7242568934");
-	$pos+=14;
-	$pdf->Text(10,$pos,"IF MAILING CHECKS: ");
-	$pos+=8;
-	$pdf->Text(10,$pos,"Make payable to: ");
-	$pdf->Text(60,$pos,"Nuaxess Account Services ");
-	$pos+=8;
-	$pdf->Text(10,$pos,"Mail to: ");
-	$pdf->Text(60,$pos,"Nuaxess Account Services ");
-	$pos+=8;
-	$pdf->Text(60,$pos,"Lock Box #235149");
-	$pos+=8;
-	$pdf->Text(60,$pos,"PO Box 85149");
-	$pos+=8;
-	$pdf->Text(60,$pos,"Chicago, IL 60689-5149");
-	$pos+=14;
-	$pdf->Text(10,$pos,"WE NOW OFFER AUTOMATIC PAYMENT PROGRAMS");
-	$pos+=8;
-	$pdf->Text(10,$pos,"Contact: billing@mynuaxess.com    OR CALL: (844) 999-5777");
-
-	}
-
-
 	$pdf->AddPage();
 	$pdf->SetFont('Arial','B',15);
 	$pdf->Text(125,32,"Monthly Statement");		
@@ -697,7 +615,6 @@ foreach ($x as $y) {
 	$pos+=5;
 	$pdf->Text(135,$pos,'Family');
 	$pdf->Text(175,$pos,$fam);	
-	/*
 	if ($count<11) {
 	$pdf->AddPage();
 	$pos=30;
@@ -796,7 +713,7 @@ foreach ($x as $y) {
 	$pos+=5;
 	$pdf->Text(15,$pos,"");
 	}
-	 */
+
 	if ($display=="B" ) {
             // Browser
 	    $pdf->Output();
@@ -836,7 +753,7 @@ foreach ($x as $y) {
                     ->setVariables($variables)
                     ->setBcc($bcc)
                     ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('Your NuAxess Invoice for May 2022')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);
@@ -864,7 +781,7 @@ foreach ($x as $y) {
                     ->setRecipients($recipients)
                     ->setVariables($variables)
                     ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('Your NuAxess Invoice for May 2022')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);
@@ -892,7 +809,7 @@ foreach ($x as $y) {
                     ->setRecipients($recipients)
                     ->setVariables($variables)
                     ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('Your NuAxess Invoice for May 2022')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);
@@ -920,7 +837,7 @@ foreach ($x as $y) {
                     ->setRecipients($recipients)
                     ->setVariables($variables)
                     ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('Your NuAxess Invoice for May 2022')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);
@@ -948,7 +865,7 @@ foreach ($x as $y) {
                     ->setRecipients($recipients)
                     ->setVariables($variables)
                     ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('Your NuAxess Invoice for May 2022')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);

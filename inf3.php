@@ -45,27 +45,23 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	} else {
                 $display = "B";
 	}
-        
-        if (!isset($_GET['month_id'])) $_GET['month_id']="2022-04"; 
-	if (!isset($_GET['id'])) $_GET['id']="ALL";
-        $company_id = $_GET['id'];
-        $month_id=$_GET['month_id'];
-	$month_id = "2022-05";
-	$last_month_id = "2022-04";
-	$display = "F";
 
-	$company_id = "ALL";
-	$pdf = new PDF();
-	$pdf->AliasNbPages();
-        if ($company_id=="ALL") {
-             $sql="select * from nua_company where org_id = 17 and id > 1 and id <> 5906 order by company_name";
-             $file_name="COMPANY_DETAIL" . "_" . $month_id . ".pdf";
+	$month_id = "2022-05";
+
+	$company_id = $_GET['id'];
+	if ($company_id=="ALL") {
+                $sql="select * from nua_company where org_id = 17 and invoicing = 'Y' order by company_name";
+		 if ($display=='E') {
+                    $sql="select * from nua_company where invoicing = 'Y' and id in (select company_id from nua_company_invoice where month_id = '" . $month_id . "' and email_sent = 'N' and ready_to_send = 'Y') order by id";
+                 }
 	} else {
-             $sql="select * from nua_company where org_id = 17 and id = " . $company_id . " order by company_name";
+                $sql="select * from nua_company where id = " . $company_id;
         }
         $list=$X->sql($sql);
+	$pdf = new PDF();
+	$pdf->AliasNbPages();
+	$file_name=$company_id . '_' . str_replace("/","",str_replace(" ","_",$company_name)) . "_" . $month_id . ".pdf";
 	foreach($list as $bbb) {
-              
                 $company_id = $bbb['id'];
 		$sql="select count(*) as c from nua_monthly_member_census where month_id = '" . $month_id . "' and company_id = " . $company_id;
 	        $ggg=$X->sql($sql);
@@ -82,6 +78,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 		     $sql="update nua_company set invoicing = 'N' where id = " . $company_id;
                      $X->execute($sql);
 
+
 	 	     $sql="select * from nua_company_invoice where month_id = '" . $month_id . "' and company_id = " . $company_id;
                      $inv=$X->sql($sql);
 
@@ -89,13 +86,6 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                      $c=$X->sql($sql);
                      $company=$c[0];
                      $output['company']=$company;
-                     if ($output!="ALL") {
-       		         $file_name=str_replace(" ","_",$company['company_name']);
-		         $file_name=str_replace("#","_",$file_name);
-                         $file_name=str_replace(",","_",$file_name);
-                         $file_name=$file_name . ".pdf";
-                     }
-
                      $post=array();
                      $post['table_name']="nua_company_invoice";
                      $post['action']="insert";
@@ -111,7 +101,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                      if ($month_id=="2022-02") { $post['billing_date']="01/05/2022"; $post['due_date']="01/31/2022"; }
                      if ($month_id=="2022-03") { $post['billing_date']="02/05/2022"; $post['due_date']="02/28/2022"; }
                      if ($month_id=="2022-04") { $post['billing_date']="03/15/2022"; $post['due_date']="03/31/2022"; }
-                     if ($month_id=="2022-05") { $post['billing_date']="04/15/2022"; $post['due_date']="04/29/2022"; }
+                     if ($month_id=="2022-05") { $post['billing_date']="04/15/2022"; $post['due_date']="04/30/2022"; }
                      $post['grand_total']=number_format(0, 2);
                      $post['medical_total']=number_format(0, 2);
                      $post['dental_total']=number_format(0, 2);
@@ -174,8 +164,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                      $ees_grand_total=0;
 		     $fam_grand_total=0;
                      $total_grand_total=0;
-                     $sql="delete from nua_company_invoice_detail where invoice_id = " . $invoice_id;
-                     $X->execute($sql);
+
                      foreach ($plans as $p) {
                             $ee_total=0;
                             $eec_total=0;
@@ -185,21 +174,15 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                             $ees_count=0;
                             $eec_count=0;
                             $fam_count=0;
-			    $sql="select * from nua_monthly_member_census where dependent_code = '' and ";
-                            $sql.="  company_id = " . $company_id . " and month_id = '" . $month_id . "' ";
-                            $sql.="  and billed_month_id = '" . $month_id . "' and coverage_price <> '' and eff_dt <> term_dt and client_plan = '" . $p['plan_code'] . "'";
+                            $sql="select * from nua_monthly_member_census where dependent_code = '' and  company_id = " . $company_id . " and month_id = '" . $month_id . "' and client_plan = '" . $p['plan_code'] . "'";
                             $cc=$X->sql($sql);
                             foreach($cc as $c) {
-                                   $grand_total+=floatval($c['coverage_price']);
-                                   if ($p['plan_type']=="*DENTAL*") { $dental_total+=floatval($c['coverage_price']); }
-                                   if ($p['plan_type']=="*VISION*") { $vision_total+=floatval($c['coverage_price']); }
-                                   if ($p['plan_type']=="*ADD*") { $add_total+=floatval($c['coverage_price']); }
-                                   if ($p['plan_type']=="*LIFE*") { $add_total+=floatval($c['coverage_price']); }
 				   if ($c['coverage_level']=="") $c['coverage_level']="EE";
 				   if ($c['coverage_level']=="EE"||$c['coverage_level']=="SI") {
                                           if ($c['coverage_price']=="") $c['coverage_price'] = $p['ee_price'];
                                           if ($c['coverage_price']=="") $c['coverage_price'] = "0";
                                           $ee_total+=floatval($c['coverage_price']);
+                                          $grand_total+=floatval($c['coverage_price']);
                                           $sub_total+=floatval($c['coverage_price']);
                                           $ee_count++;
                                           if ($p['plan_type']=="*MEDICAL*") {
@@ -208,11 +191,16 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 					     $ee_grand_total+=floatval($c['coverage_price']);
 					     $total_grand_total+=floatval($c['coverage_price']);
                                           }
+                                          if ($p['plan_type']=="*DENTAL*") { $dental_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*VISION*") { $vision_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*ADD*") { $add_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*LIFE*") { $add_total+=floatval($c['coverage_price']); }
                                    }
 				   if ($c['coverage_level']=="EC"||$c['coverage_level']=="EC2") {
                                           if ($c['coverage_price']=="") $c['coverage_price'] = $p['eec_price'];
                                           if ($c['coverage_price']=="") $c['coverage_price'] = "0";
                                           $eec_total+=floatval($c['coverage_price']);
+                                          $grand_total+=floatval($c['coverage_price']);
                                           $sub_total+=floatval($c['coverage_price']);
                                           $eec_count++;
                                           if ($p['plan_type']=="*MEDICAL*") {
@@ -221,11 +209,16 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 					     $eec_grand_total+=floatval($c['coverage_price']);
 					     $total_grand_total+=floatval($c['coverage_price']);
                                           }
+                                          if ($p['plan_type']=="*DENTAL*") { $dental_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*VISION*") { $vision_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*ADD*") { $add_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*LIFE*") { $add_total+=floatval($c['coverage_price']); }
                                    }
 				   if ($c['coverage_level']=="ES"||$c['coverage_level']=="ES") {
                                           if ($c['coverage_price']=="") $c['coverage_price'] = $p['ees_price'];
                                           if ($c['coverage_price']=="") $c['coverage_price'] = "0";
                                           $ees_total+=floatval($c['coverage_price']);
+                                          $grand_total+=floatval($c['coverage_price']);
                                           $sub_total+=floatval($c['coverage_price']);
                                           $ees_count++;
                                           if ($p['plan_type']=="*MEDICAL*") {
@@ -234,11 +227,16 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 					     $ees_grand_total+=floatval($c['coverage_price']);
 					     $total_grand_total+=floatval($c['coverage_price']);
                                           }
+                                          if ($p['plan_type']=="*DENTAL*") { $dental_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*VISION*") { $vision_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*ADD*") { $add_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*LIFE*") { $add_total+=floatval($c['coverage_price']); }
                                    }
 				   if ($c['coverage_level']=="FA"||$c['coverage_level']=="FAM") {
                                           if ($c['coverage_price']=="") $c['coverage_price'] = $p['fam_price'];
                                           if ($c['coverage_price']=="") $c['coverage_price'] = "0";
                                           $fam_total+=floatval($c['coverage_price']);
+                                          $grand_total+=floatval($c['coverage_price']);
                                           $sub_total+=floatval($c['coverage_price']);
                                           $fam_count++;
                                           if ($p['plan_type']=="*MEDICAL*") {
@@ -247,6 +245,10 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 					     $fam_grand_total+=floatval($c['coverage_price']);
 					     $total_grand_total+=floatval($c['coverage_price']);
                                           }
+                                          if ($p['plan_type']=="*DENTAL*") { $dental_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*VISION*") { $vision_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*ADD*") { $add_total+=floatval($c['coverage_price']); }
+                                          if ($p['plan_type']=="*LIFE*") { $add_total+=floatval($c['coverage_price']); }
                                    }
 
 
@@ -279,219 +281,11 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
                             $post['fam_qty']=$fam_count;
                             $post['fam_total']=number_format(floatval($fam_total),2);
                             $X->post($post);
-		     }
-
-		     //--
-		     //-- Unbilled Medical
-		     //--
-                $prev_qty=0;
-		$prev_total=0;
-		$ee_total=0;
-		$ee_count=0;
-		$ees_total=0;
-		$ees_count=0;
-		$eec_total=0;
-		$eec_count=0;
-		$fam_total=0;
-		$fam_count=0;
-                $sql="select count(*) as c from nua_monthly_member_census where company_id = " . $company_id . " and billed_month_id = '" . $month_id . "' and month_id <> billed_month_id and ";
-		$sql.="plan_type = '*MEDICAL*'";
-                $a=$X->sql($sql);
-		if ($a[0]['c']!='0') {
-
-			    $sql="select * from nua_monthly_member_census where dependent_code = '' and ";
-                            $sql.="  company_id = " . $company_id . " and month_id <> billed_month_id ";
-                            $sql.="  and billed_month_id = '" . $month_id . "' and coverage_price <> '' and eff_dt <> term_dt and plan_type = '*MEDICAL*'";
-                            $cc=$X->sql($sql);
-                            foreach($cc as $c) {
-                                   $grand_total+=floatval($c['coverage_price']);
-                                   $prev_qty++;
-                                   $prev_total+=floatval($c['coverage_price']);
-                                   $ee_total+=floatval($c['coverage_price']);
-				   /*
-				   if ($c['coverage_level']=="") $c['coverage_level']="EE";
-				   if ($c['coverage_level']=="EE"||$c['coverage_level']=="SI") {
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = $p['ee_price'];
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
-                                          $ee_total+=floatval($c['coverage_price']);
-                                          $sub_total+=floatval($c['coverage_price']);
-                                          $ee_count++;
-                                             $ee_grand_count++;
-					     $total_grand_count++;
-					     $ee_grand_total+=floatval($c['coverage_price']);
-					     $total_grand_total+=floatval($c['coverage_price']);
-                                   }
-				   if ($c['coverage_level']=="EC"||$c['coverage_level']=="EC2") {
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = $p['eec_price'];
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
-                                          $eec_total+=floatval($c['coverage_price']);
-                                          $sub_total+=floatval($c['coverage_price']);
-                                          $eec_count++;
-                                             $eec_grand_count++;
-                                             $total_grand_count++;
-					     $eec_grand_total+=floatval($c['coverage_price']);
-					     $total_grand_total+=floatval($c['coverage_price']);
-                                   }
-				   if ($c['coverage_level']=="ES"||$c['coverage_level']=="ES") {
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = $p['ees_price'];
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
-                                          $ees_total+=floatval($c['coverage_price']);
-                                          $sub_total+=floatval($c['coverage_price']);
-                                          $ees_count++;
-                                             $ees_grand_count++;
-                                             $total_grand_count++;
-					     $ees_grand_total+=floatval($c['coverage_price']);
-					     $total_grand_total+=floatval($c['coverage_price']);
-                                   }
-				   if ($c['coverage_level']=="FA"||$c['coverage_level']=="FAM") {
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = $p['fam_price'];
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
-                                          $fam_total+=floatval($c['coverage_price']);
-                                          $sub_total+=floatval($c['coverage_price']);
-                                          $fam_count++;
-                                             $fam_grand_count++;
-                                             $total_grand_count++;
-					     $fam_grand_total+=floatval($c['coverage_price']);
-					     $total_grand_total+=floatval($c['coverage_price']);
-                                   }
-				    */
-
-                            }
-                            $post=array();
-                            $post['table_name']="nua_company_invoice_detail";
-                            $post['action']="insert";
-			    $sql="select * from nua_company_invoice_detail where invoice_id = " . $invoice_id . " and plan_code = '*APR-MEDICAL'";
-                            $pp=$X->sql($sql); 
-                            if (sizeof($pp)>0) {
-                                $post['id']=$pp[0]['id'];
-			    }
-
-                            $post['invoice_id']=$invoice_id;
-                            $post['plan_code']='*APR-MEDICAL';
-                            $post['plan_type']='*APA*';
-                            $post['company_id']=$company_id;
-
-                            $post['apa_code']='XXX';
-			    $post['ee_price']="***";
-                            $post['ee_qty']=$ee_count;
-                            $post['ee_total']=number_format($ee_total,2);
-                            $post['ees_price']="***";
-                            $post['ees_qty']=$ees_count;
-                            $post['ees_total']=number_format($ees_total,2);
-                            $post['eec_price']="***";
-                            $post['eec_qty']=$eec_count;
-                            $post['eec_total']=number_format($eec_total,2);
-                            $post['fam_price']="***";
-                            $post['fam_qty']=$fam_count;
-                            $post['fam_total']=number_format(floatval($fam_total),2);
-                            $X->post($post);
-		}
-		$ee_total=0;
-		$ee_count=0;
-		$ees_total=0;
-		$ees_count=0;
-		$eec_total=0;
-		$eec_count=0;
-		$fam_total=0;
-		$fam_count=0;
-                $sql="select count(*) as c from nua_monthly_member_census where company_id = " . $company_id . " and billed_month_id = '" . $month_id . "' and month_id <> billed_month_id and ";
-		$sql.="plan_type not in ('*MEDICAL*')";
-                $a=$X->sql($sql);
-		$flag="N";
-		if ($a[0]['c']!='0') {
-
-			    $sql="select * from nua_monthly_member_census where dependent_code = '' and ";
-                            $sql.="  company_id = " . $company_id . " and month_id <> billed_month_id ";
-                            $sql.="  and billed_month_id = '" . $month_id . "' and coverage_price <> '' and eff_dt <> term_dt and plan_type not in ('*MEDICAL*')";
-                            $cc=$X->sql($sql);
-                            foreach($cc as $c) {
-				   $flag="Y";
-                                   $grand_total+=floatval($c['coverage_price']);
-                                   $prev_qty++;
-                                   $prev_total+=floatval($c['coverage_price']);
-                                   $ee_total+=floatval($c['coverage_price']);
-				   /*
-				   if ($c['coverage_level']=="") $c['coverage_level']="EE";
-				   if ($c['coverage_level']=="EE"||$c['coverage_level']=="SI") {
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = $p['ee_price'];
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
-                                          $ee_total+=floatval($c['coverage_price']);
-                                          $sub_total+=floatval($c['coverage_price']);
-                                          $ee_count++;
-                                   }
-				   if ($c['coverage_level']=="EC"||$c['coverage_level']=="EC2") {
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = $p['eec_price'];
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
-                                          $eec_total+=floatval($c['coverage_price']);
-                                          $sub_total+=floatval($c['coverage_price']);
-                                          $eec_count++;
-                                   }
-				   if ($c['coverage_level']=="ES"||$c['coverage_level']=="ES") {
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = $p['ees_price'];
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
-                                          $ees_total+=floatval($c['coverage_price']);
-                                          $sub_total+=floatval($c['coverage_price']);
-                                          $ees_count++;
-                                   }
-				   if ($c['coverage_level']=="FA"||$c['coverage_level']=="FAM") {
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = $p['fam_price'];
-                                          if ($c['coverage_price']=="") $c['coverage_price'] = "0";
-                                          $fam_total+=floatval($c['coverage_price']);
-                                          $sub_total+=floatval($c['coverage_price']);
-                                          $fam_count++;
-                                   }
-				    */
-
-                            }
-                            $post=array();
-                            $post['table_name']="nua_company_invoice_detail";
-                            $post['action']="insert";
-			    $sql="select * from nua_company_invoice_detail where invoice_id = " . $invoice_id . " and plan_code = '*APR-GUARDIAN'";
-                            $pp=$X->sql($sql); 
-                            if (sizeof($pp)>0) {
-                                $post['id']=$pp[0]['id'];
-			    }
-
-                            $post['invoice_id']=$invoice_id;
-                            $post['plan_code']='*APR-GUARDIAN';
-                            $post['plan_type']='*GUARDIAN*';
-                            $post['company_id']=$company_id;
-
-                            $post['apa_code']='XXX';
-                            $post['ee_price']="***";
-                            $post['ee_qty']=$ee_count;
-                            $post['ee_total']=number_format($ee_total,2);
-                            $post['ees_price']="***";
-                            $post['ees_qty']=$ees_count;
-                            $post['ees_total']=number_format($ees_total,2);
-                            $post['eec_price']="***";
-                            $post['eec_qty']=$eec_count;
-                            $post['eec_total']=number_format($eec_total,2);
-                            $post['fam_price']="***";
-                            $post['fam_qty']=$fam_count;
-                            $post['fam_total']=number_format(floatval($fam_total),2);
-                            $X->post($post);
-
-		}
-
-                $grand_total=0;
-		$sql="select * from nua_company_invoice_detail where invoice_id = " . $invoice_id;
-		$a=$X->sql($sql);
-                foreach($a as $b) {
-	             $f_ee=str_replace("$","",$b['ee_total']);
-	             $f_ee=str_replace(",","",$f_ee);
-	             $f_ees=str_replace("$","",$b['ees_total']);
-	             $f_ees=str_replace(",","",$f_ees);
-	             $f_eec=str_replace("$","",$b['eec_total']);
-	             $f_eec=str_replace(",","",$f_eec);
-	             $f_fam=str_replace("$","",$b['fam_total']);
-	             $f_fam=str_replace(",","",$f_fam);
-		     $grand_total+=floatval($f_ee)+floatval($f_eec)+floatval($f_ees)+floatval($f_fam);
-		}
-
+                     }
 
                 $sql="select amount from nua_company_invoice_adjustments where company_id = " . $company_id . " and month_id = '" . $month_id . "'";
                 $a=$X->sql($sql);
+                $adj_total=0;
                 foreach($a as $b) {
                      $adj_total+=floatval($b['amount']);
 		}
@@ -513,14 +307,12 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 		$post['fam_medical_count']=$fam_grand_count;
 		$post['fam_medical_total']=$fam_grand_total;
 		$post['medical_count']=$total_grand_count;
-		$post['medical_total']=number_format($total_grand_total,2);
+		$post['medical_total']=number_format($total_grand_total);
 
                 $post['grand_total']=number_format($grand_total,2); 
                 $post['grand_total_float']=$grand_total; 
                 $post['adjustments']=number_format($adj_total,2); 
                 $post['sub_total']=number_format($sub_total,2); 
-		$post['prev_qty']=$prev_qty;
-		$post['prev_total']=$prev_total;
                 $X->post($post);
                 $po=array();
                 $po['table_name']="nua_company";
@@ -548,13 +340,12 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$detail=array();
 	$p00=$X->sql($sql);
 	foreach($p00 as $p0) {
-//		if ($p0['ee_qty']>0||$p0['eec_qty']>0||$p0['ees_qty']>0||$p0['fam_qty']>0) {
+		if ($p0['ee_qty']>0||$p0['eec_qty']>0||$p0['ees_qty']>0||$p0['fam_qty']>0) {
 		   array_push($detail,$p0);
-//		}
+		}
 	}
 
-	$sql="select * from nua_monthly_member_census where company_id = " . $company_id . " and month_id = '" . $month_id . "' ";
-        $sql.=" and billed_month_id = '" . $month_id . "' and eff_dt <> term_dt and dependent_code = '' order by last_name, first_name";
+	$sql="select * from nua_monthly_member_census where company_id = " . $company_id . " and month_id = '" . $month_id . "' and dependent_code = '' order by last_name, first_name";
 	$enrollments=array();
 	$p00=$X->sql($sql);
 	$count=0;
@@ -563,28 +354,19 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$ec=0;
 	$fam=0;
 	foreach($p00 as $p0) {
-	   array_push($enrollments,$p0);
-	   if ($p0['coverage_level']=='EE'&&$p0['plan_type']=="*MEDICAL*") $ee++;
-	   if ($p0['coverage_level']=='EC'&&$p0['plan_type']=="*MEDICAL*") $ec++;
-	   if ($p0['coverage_level']=='ES'&&$p0['plan_type']=="*MEDICAL*") $es++;
-	   if ($p0['coverage_level']=='FAM'&&$p0['plan_type']=="*MEDICAL*") $fam++;	 
-	   if ($p0['plan_type']=="*MEDICAL*") $count++;
-	}
-
-	$sql="select * from nua_monthly_member_census where company_id = " . $company_id . " and month_id <> '" . $month_id . "' ";
-        $sql.=" and billed_month_id = '" . $month_id . "' and eff_dt <> term_dt and dependent_code = '' order by last_name, first_name";
-	$enrollments_pre=array();
-	$p00=$X->sql($sql);
-	$count=0;
-	foreach($p00 as $p0) {
-	   array_push($enrollments_pre,$p0);
+		   array_push($enrollments,$p0);
+		   if ($p0['coverage_level']=='EE'&&$p0['plan_type']=="*MEDICAL*") $ee++;
+		   if ($p0['coverage_level']=='EC'&&$p0['plan_type']=="*MEDICAL*") $ec++;
+		   if ($p0['coverage_level']=='ES'&&$p0['plan_type']=="*MEDICAL*") $es++;
+		   if ($p0['coverage_level']=='FAM'&&$p0['plan_type']=="*MEDICAL*") $fam++;	 
+		   if ($p0['plan_type']=="*MEDICAL*") $count++;
 	}
 
         $invite_total_float=0;
 	$pdf->AddPage();
 	$pdf->SetFont('Arial','B',15);
 	$pdf->Text(125,32,"Monthly Statement");		
-	$pdf->SetFont('Times','',10);
+	$pdf->SetFont('Times','',12);
 	$pdf->Text(10,42,$invoice['company_name']);
 	$pdf->Text(10,47,$invoice['billing_address'] . ' ' . $company['invoice_suite']);
 	$pdf->Text(10,52,$invoice['billing_city'] . ', ' . $invoice['billing_state'] . ' ' . $invoice['billing_zip']);
@@ -615,15 +397,15 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 		   $pos+=5;
 	   }
  */	   
-	$pdf->Text(120,42,'Invoice Number:');
-	$pdf->Text(120,47,'Invoice Month:');
-	$pdf->Text(120,52,'Billing Date:');
-	$pdf->Text(120,57,'Payment Due Date:');
+	$pdf->Text(125,42,'Invoice Number:');
+	$pdf->Text(125,47,'Invoice Month:');
+	$pdf->Text(125,52,'Billing Date:');
+	$pdf->Text(125,57,'Payment Due Date:');
 
 	$pdf->Text(180,42,$invoice['invoice_number']);
-	$pdf->Text(180,47,'MAY');
-	$pdf->Text(180,52,'04/15/2022');
-	$pdf->Text(180,57,'04/29/2022');
+	$pdf->Text(180,47,'APRIL');
+	$pdf->Text(180,52,'03/15/2022');
+	$pdf->Text(180,57,'03/31/2022');
 
 	$pos+=10;
 
@@ -638,10 +420,9 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$pdf->Line(10,$pos,200,$pos);
 	$line_count=0;
 	 foreach($detail as $d) {
-	                                $pdf->SetFont('Times','',10);
 					if ($d['ee_qty']!="0") {
-							$pos+=5;
-							$pdf->Text(10,$pos,substr(strtoupper($d['plan_code']),0,18));
+							$pos+=7;
+							$pdf->Text(10,$pos,substr(strtoupper($d['plan_code']),0,11));
                  					$pdf->Text(50,$pos,"Employee Only");
 							$pdf->Text(105,$pos,$d['ee_qty']);
 							if ($d['plan_code']!="LIFE"&&$d['plan_code']!="ADD") {
@@ -653,8 +434,8 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 							$line_count++;
 					}
 					if ($d['ees_qty']!="0") {
-							$pos+=5;
-							$pdf->Text(10,$pos,substr(strtoupper($d['plan_code']),0,18));
+							$pos+=7;
+							$pdf->Text(10,$pos,substr(strtoupper($d['plan_code']),0,11));
 						$pdf->Text(50,$pos,"Employee & Spouse Only");
 							$pdf->Text(105,$pos,$d['ees_qty']);
 							$pdf->Text(135,$pos,"$" . $d['ees_price']);
@@ -662,8 +443,8 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 													$line_count++;
 					}
 					if ($d['eec_qty']!="0") {
-							$pos+=5;
-							$pdf->Text(10,$pos,substr(strtoupper($d['plan_code']),0,18));
+							$pos+=7;
+							$pdf->Text(10,$pos,substr(strtoupper($d['plan_code']),0,11));
 						$pdf->Text(50,$pos,"Employee & Children");
 							$pdf->Text(105,$pos,$d['eec_qty']);
 							$pdf->Text(135,$pos,"$" . $d['eec_price']);
@@ -671,8 +452,8 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 				            $line_count++;
 					}
 					if ($d['fam_qty']!="0") {
-							$pos+=5;
-							$pdf->Text(10,$pos,substr(strtoupper($d['plan_code']),0,18));
+							$pos+=7;
+							$pdf->Text(10,$pos,substr(strtoupper($d['plan_code']),0,11));
 							$pdf->Text(50,$pos,"Family");
 							$pdf->Text(105,$pos,$d['fam_qty']);
 							$pdf->Text(135,$pos,"$" . $d['fam_price']);
@@ -680,7 +461,7 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 							$line_count++;
 					}
 	   }
-	$pos=$pos+5;
+	$pos=$pos+7;
 	$pdf->SetLineWidth(.50);
 	$pdf->Line(10,$pos,200,$pos);
 	$pos+=5;
@@ -689,16 +470,16 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 
 	$pos=135+($line_count*7);
 
-//	if ($pos>245) { 
-//		$pos=245;
-//	}
-//	$pdf->Text(30,$pos,'** Prices vary in PRISM. ');
-//	$pos+=5;
-//	$pdf->Text(30,$pos,'Individual prices shown in census.');
-//	$pos+=5;
+	if ($pos>245) { 
+		$pos=245;
+	}
+	$pdf->Text(30,$pos,'** Prices vary in PRISM. ');
+	$pos+=5;
+	$pdf->Text(30,$pos,'Individual prices shown in census.');
+	$pos+=5;
 
 	$pdf->AddPage();
-	$pdf->SetFont('Times','',10);
+	$pdf->SetFont('Times','',12);
 	$pdf->Text(10,42,$invoice['company_name']);
 	$pdf->Text(10,47,$invoice['billing_address'] . ' ' . $company['invoice_suite']);
 	$pdf->Text(10,52,$invoice['billing_city'] . ', ' . $invoice['billing_state'] . ' ' . $invoice['billing_zip']);
@@ -707,7 +488,6 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$pdf->Text(10,$pos,"CURRENT MONTH ENROLLMENT");
 	$pos=$pos+10;
 
-	$pdf->SetFont('Times','',10);
 	$pdf->Text(10,$pos,'MEMBER NAME');
 	$pdf->Text(75,$pos,'EFF DATE');
 	$pdf->Text(105,$pos,'PLAN');
@@ -718,7 +498,6 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$pdf->Line(10,$pos,200,$pos);
 	$last="XXX";
 	   foreach($enrollments as $d) {
-	                                $pdf->SetFont('Times','',10);
 			if ($d['last_name'] . ', ' . $d['first_name']!=$last&&$last!="XXX") {
 			   $pos+=9;
 			} else {
@@ -727,13 +506,13 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 			$last=$d['last_name'] . ', ' . $d['first_name'];
 			$pdf->Text(10,$pos,strtoupper($d['last_name']) . ', ' . strtoupper($d['first_name']));
 			$pdf->Text(75,$pos, $d['eff_dt']);
-			$pdf->Text(105,$pos,substr(strtoupper($d['client_plan']),0,18));
+			$pdf->Text(105,$pos,substr(strtoupper($d['client_plan']),0,11));
 			$pdf->Text(145,$pos,$d['coverage_level']);
 			$pdf->Text(175,$pos,"$" . $d['coverage_price']);	   
 
 			if ($pos>250) {
 				$pdf->AddPage();
-				$pdf->SetFont('Times','',10);
+				$pdf->SetFont('Times','',12);
 				$pdf->Text(10,42,$invoice['company_name']);
 				$pdf->Text(10,47,$invoice['billing_address'] . ' ' . $company['invoice_suite']);
 				$pdf->Text(10,52,$invoice['billing_city'] . ', ' . $invoice['billing_state'] . ' ' . $invoice['billing_zip']);
@@ -742,7 +521,6 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 				$pdf->Text(10,$pos,"CURRENT MONTH ENROLLMENT (CONTINUED)");
 				$pos=$pos+10;
 
-				$pdf->SetFont('Times','',10);
 				$pdf->Text(10,$pos,'MEMBER NAME');
 				$pdf->Text(60,$pos,'EFF DATE');
 				$pdf->Text(95,$pos,'PLAN');
@@ -758,74 +536,6 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 		   $pdf->AddPage();
 		   $pos=30;
 	   }
-
-	   if (sizeof($enrollments_pre)>0) {
-
-	$pdf->AddPage();
-	$pdf->SetFont('Times','',10);
-	$pdf->Text(10,42,$invoice['company_name']);
-	$pdf->Text(10,47,$invoice['billing_address'] . ' ' . $company['invoice_suite']);
-	$pdf->Text(10,52,$invoice['billing_city'] . ', ' . $invoice['billing_state'] . ' ' . $invoice['billing_zip']);
-	$pos=68;
-
-	$pdf->Text(10,$pos,"PRIOR MONTH UNBILLED ENROLLMENT");
-	$pos=$pos+10;
-
-	$pdf->SetFont('Times','',10);
-	$pdf->Text(10,$pos,'MEMBER NAME');
-	$pdf->Text(75,$pos,'EFF DATE');
-	$pdf->Text(105,$pos,'PLAN');
-	$pdf->Text(145,$pos,'COVERAGE');
-	$pdf->Text(175,$pos,'PRICE');
-	$pos=$pos+7;
-	$pdf->SetLineWidth(.50);
-	$pdf->Line(10,$pos,200,$pos);
-	$last="XXX";
-	   foreach($enrollments_pre as $d) {
-	                                $pdf->SetFont('Times','',10);
-			if ($d['last_name'] . ', ' . $d['first_name']!=$last&&$last!="XXX") {
-			   $pos+=9;
-			} else {
-			   $pos+=5;	
-			}
-			$last=$d['last_name'] . ', ' . $d['first_name'];
-			$pdf->Text(10,$pos,strtoupper($d['last_name']) . ', ' . strtoupper($d['first_name']));
-			$pdf->Text(75,$pos, $d['eff_dt']);
-			$pdf->Text(105,$pos,substr(strtoupper($d['client_plan']),0,18));
-			$pdf->Text(145,$pos,$d['coverage_level']);
-			$pdf->Text(175,$pos,"$" . $d['coverage_price']);	   
-
-			if ($pos>250) {
-				$pdf->AddPage();
-				$pdf->SetFont('Times','',10);
-				$pdf->Text(10,42,$invoice['company_name']);
-				$pdf->Text(10,47,$invoice['billing_address'] . ' ' . $company['invoice_suite']);
-				$pdf->Text(10,52,$invoice['billing_city'] . ', ' . $invoice['billing_state'] . ' ' . $invoice['billing_zip']);
-				$pos=77;
-
-				$pdf->Text(10,$pos,"PRIOR MONTH UNBILLED ENROLLMENT (CONTINUED)");
-				$pos=$pos+10;
-
-				$pdf->SetFont('Times','',10);
-				$pdf->Text(10,$pos,'MEMBER NAME');
-				$pdf->Text(60,$pos,'EFF DATE');
-				$pdf->Text(95,$pos,'PLAN');
-				$pdf->Text(135,$pos,'COVERAGE');
-				$pdf->Text(175,$pos,'PRICE');
-				$pos=$pos+7;
-				$pdf->SetLineWidth(.50);
-				$pdf->Line(10,$pos,200,$pos);			
-				
-			}
-	   }
-	   if ($pos>300) {
-		   $pdf->AddPage();
-		   $pos=30;
-	   }
-
-	   }
-
-
 	$pos=$pos+3;
 	$pdf->SetLineWidth(.50);
 	$pdf->Line(10,$pos,200,$pos);   
@@ -844,9 +554,6 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
 	$pdf->Text(130,$pos,'Family');
 	$pdf->Text(175,$pos,$fam);	
 
-	}
-     
-       } // list of companies being processed, usually 1.
 	if ($display=="B" ) {
             // Browser
 	    $pdf->Output();
@@ -859,6 +566,198 @@ $mailersend = new MailerSend(['api_key' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9
             // Save to Server
 	    $pdf->Output('F','/var/www/html/d/' . $file_name);
         }
+	if ($display=="E" ) {
+            $sql="select * from nua_company where id = " . $company_id;
+            $c= $X->sql($sql);
+            $company=$c[0];
+            // Save to Server and Email
+//	    $pdf->Output('F','/var/www/html/d/' . $file_name);
+            if ($company['billing_contact_email']!='') {
+                 $recipients=array();
+		 $r=new Recipient($company['billing_contact_email'], $company['billing_contact_email']);
+                 array_push($recipients,$r);
+                 $attachments=array();
+		 $a= new Attachment(file_get_contents('/var/www/html/d/' . $file_name), $file_name);
+                 array_push($attachments,$a);
+                 $variables=array();
+                 $v=new Variable($company['billing_contact_email'], ['name' => $company['company_name']]);
+                 array_push($variables,$v);
+
+                 $bcc = [
+                     new Recipient('dropbox@mynuaxess.com', 'BCC')
+                 ];
+                 $emailParams = (new EmailParams())
+                    ->setFrom('donotreply@nuaxess.email')
+                    ->setFromName('NuAxess Billing')
+                    ->setRecipients($recipients)
+                    ->setVariables($variables)
+                    ->setBcc($bcc)
+                    ->setTemplateId('jy7zpl98jyo45vx6')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
+                    ->setAttachments($attachments);
+
+                    $mailersend->email->send($emailParams);
+                    $sql="update nua_company_invoice set email_sent = 'Y' where id = " . $invoice_id;
+                    $X->execute($sql);
+        }
+
+            if ($company['billing_contact_email2']!='') {
+                 $recipients=array();
+		 $r=new Recipient($company['billing_contact_email2'], $company['billing_contact_email2']);
+                 array_push($recipients,$r);
+                 $attachments=array();
+		 $a= new Attachment(file_get_contents('/var/www/html/d/' . $file_name), $file_name);
+                 array_push($attachments,$a);
+                 $variables=array();
+                 $v=new Variable($company['billing_contact_email2'], ['name' => $company['company_name']]);
+                 array_push($variables,$v);
+
+                 $bcc = [
+                     new Recipient('dropbox@mynuaxess.com', 'BCC')
+                 ];
+                 $emailParams = (new EmailParams())
+                    ->setFrom('donotreply@nuaxess.email')
+                    ->setFromName('NuAxess Billing')
+                    ->setRecipients($recipients)
+                    ->setVariables($variables)
+                    ->setTemplateId('jy7zpl98jyo45vx6')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
+                    ->setAttachments($attachments);
+
+                    $mailersend->email->send($emailParams);
+                    $sql="update nua_company_invoice set email_sent = 'Y' where id = " . $invoice_id;
+                    $X->execute($sql);
+        }
+
+            if ($company['billing_contact_email3']!='') {
+                 $recipients=array();
+		 $r=new Recipient($company['billing_contact_email3'], $company['billing_contact_email3']);
+                 array_push($recipients,$r);
+                 $attachments=array();
+		 $a= new Attachment(file_get_contents('/var/www/html/d/' . $file_name), $file_name);
+                 array_push($attachments,$a);
+                 $variables=array();
+                 $v=new Variable($company['billing_contact_email3'], ['name' => $company['company_name']]);
+                 array_push($variables,$v);
+
+                 $bcc = [
+                     new Recipient('dropbox@mynuaxess.com', 'BCC')
+                 ];
+                 $emailParams = (new EmailParams())
+                    ->setFrom('donotreply@nuaxess.email')
+                    ->setFromName('NuAxess Billing')
+                    ->setRecipients($recipients)
+                    ->setVariables($variables)
+                    ->setTemplateId('jy7zpl98jyo45vx6')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
+                    ->setAttachments($attachments);
+
+                    $mailersend->email->send($emailParams);
+                    $sql="update nua_company_invoice set email_sent = 'Y' where id = " . $invoice_id;
+                    $X->execute($sql);
+        }
+
+            if ($company['billing_contact_email4']!='') {
+                 $recipients=array();
+		 $r=new Recipient($company['billing_contact_email4'], $company['billing_contact_email3']);
+                 array_push($recipients,$r);
+                 $attachments=array();
+		 $a= new Attachment(file_get_contents('/var/www/html/d/' . $file_name), $file_name);
+                 array_push($attachments,$a);
+                 $variables=array();
+                 $v=new Variable($company['billing_contact_email4'], ['name' => $company['company_name']]);
+                 array_push($variables,$v);
+
+                 $bcc = [
+                     new Recipient('dropbox@mynuaxess.com', 'BCC')
+                 ];
+                 $emailParams = (new EmailParams())
+                    ->setFrom('donotreply@nuaxess.email')
+                    ->setFromName('NuAxess Billing')
+                    ->setRecipients($recipients)
+                    ->setVariables($variables)
+                    ->setTemplateId('jy7zpl98jyo45vx6')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
+                    ->setAttachments($attachments);
+
+                    $mailersend->email->send($emailParams);
+                    $sql="update nua_company_invoice set email_sent = 'Y' where id = " . $invoice_id;
+                    $X->execute($sql);
+        }
+
+            if ($company['billing_contact_email5']!='') {
+                 $recipients=array();
+		 $r=new Recipient($company['billing_contact_email4'], $company['billing_contact_email3']);
+                 array_push($recipients,$r);
+                 $attachments=array();
+		 $a= new Attachment(file_get_contents('/var/www/html/d/' . $file_name), $file_name);
+                 array_push($attachments,$a);
+                 $variables=array();
+                 $v=new Variable($company['billing_contact_email4'], ['name' => $company['company_name']]);
+                 array_push($variables,$v);
+
+                 $bcc = [
+                     new Recipient('dropbox@mynuaxess.com', 'BCC')
+                 ];
+                 $emailParams = (new EmailParams())
+                    ->setFrom('donotreply@nuaxess.email')
+                    ->setFromName('NuAxess Billing')
+                    ->setRecipients($recipients)
+                    ->setVariables($variables)
+                    ->setTemplateId('jy7zpl98jyo45vx6')
+                    ->setSubject('Your NuAxess Invoice for April 2022')
+                    ->setAttachments($attachments);
+
+                    $mailersend->email->send($emailParams);
+                    $sql="update nua_company_invoice set email_sent = 'Y' where id = " . $invoice_id;
+                    $X->execute($sql);
+        }
+
+
+
+        }
+		}
+     
+       } // list of companies being processed, usually 1.
+       $sql="select * from nua_company_invoice where month_id = '" . $month_id . "'";
+       $list=$X->sql($sql);
+       $invoice_count=0;
+       $invoice_total=0;
+       $invite_count=0;
+       $invite_total=0;
+       $infiniti_count=0;
+       $infiniti_total=0;
+       foreach($list as $l) {
+            $sql="select org_id from nua_company where id = " . $l['company_id'];
+            $hh=$X->sql($sql);
+	    if (sizeof($hh)>0) {
+            $invoice_count++;
+            $invoice_total+=$l['grand_total_float'];
+            if ($l['invite_total_float']>0 && $hh[0]['org_id']!=17 ) {
+               $invite_count++;
+               $invite_total+=$l['invite_total_float'];
+	    } 
+	    if ($hh[0]['org_id']==17) {
+               $infiniti_count++;
+               $infiniti_total+=$l['grand_total_float'];
+	    }
+	    }
+       }
+
+       $post=array();
+       $post['table_name']="nua_invoice_totals";
+       $post['action']="insert";
+       $sql="select * from nua_invoice_totals where month_id = '" . $month_id . "'";
+       $z=$X->sql($sql);
+       if (sizeof($z)>0) $post['id']=$z[0]['id'];
+       $post['month_id']=$month_id;
+       $post['invoice_count']=$invoice_count;
+       $post['invoice_total']=$invoice_total;
+       $post['invite_count']=$invite_count;
+       $post['invite_total']=$invite_total;
+       $post['infiniti_count']=$infiniti_count;
+       $post['infiniti_total']=$infiniti_total;
+       $X->post($post);
 
 ?>
 
