@@ -144,14 +144,29 @@ case 'submit-quote':
 		case 'add-client-plan':
                 $output=$F->getClientPlan($data);
                 break;	
+		case 'add-quoted-plan':
+                $output=$F->getQuotePlan($data);
+                break;	
 		case 'edit-client-plan':
                 $output=$F->getEditClientPlan($data);
+                break;	
+		case 'edit-quoted-plan':
+                $output=$F->getEditQuotedPlan($data);
                 break;	
 		case 'post-delete-client-plan':
                 $output=$F->postDeleteClientPlan($data);
                 break;	
+		case 'post-delete-quoted-plan':
+                $output=$F->postDeleteQuotedPlan($data);
+                break;	
 		case 'post-add-client-plan':
                 $output=$F->postClientPlan($data);
+                break;	
+		case 'post-add-quoted-plan':
+                $output=$F->postQuotedPlan($data);
+                break;	
+		case 'post-accept-quoted-plan':
+                $output=$F->postAcceptQuotedPlan($data);
                 break;	
 		case 'edit-customer-payment':
                 $output=$F->getEditCompanyPayment($data);
@@ -198,6 +213,9 @@ case 'submit-quote':
                 break;	
 		case 'post-employee-lookup':
                 $output=$F->postEmployeeLookup($data);
+                break;	
+		case 'post-employee-term':
+                $output=$F->postEmployeeTerm($data);
                 break;	
 		case 'post-add-invoice':
                 $output=$F->postAddInvoice($data);

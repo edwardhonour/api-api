@@ -838,8 +838,8 @@ foreach ($x as $y) {
                     ->setRecipients($recipients)
                     ->setVariables($variables)
                     ->setBcc($bcc)
-                    ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('NuAxess Invoice for June 2022')
+                    ->setTemplateId('3z0vklo6821l7qrx')
+                    ->setSubject('PAST-DUE Invoice for June 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);
@@ -865,8 +865,8 @@ foreach ($x as $y) {
                     ->setFromName('NuAxess Billing')
                     ->setRecipients($recipients)
                     ->setVariables($variables)
-                    ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('NuAxess Invoice for June 2022')
+                    ->setTemplateId('3z0vklo6821l7qrx')
+                    ->setSubject('PAST-DUE Invoice for June 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);
@@ -893,8 +893,8 @@ foreach ($x as $y) {
                     ->setFromName('NuAxess Billing')
                     ->setRecipients($recipients)
                     ->setVariables($variables)
-                    ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('NuAxess Invoice for June 2022')
+                    ->setTemplateId('3z0vklo6821l7qrx')
+                    ->setSubject('PAST-DUE Invoice for June 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);
@@ -921,8 +921,8 @@ foreach ($x as $y) {
                     ->setFromName('NuAxess Billing')
                     ->setRecipients($recipients)
                     ->setVariables($variables)
-                    ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('Your NuAxess Invoice for June 2022')
+                    ->setTemplateId('3z0vklo6821l7qrx')
+                    ->setSubject('PAST-DUE Invoice for June 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);
@@ -949,8 +949,8 @@ foreach ($x as $y) {
                     ->setFromName('NuAxess Billing')
                     ->setRecipients($recipients)
                     ->setVariables($variables)
-                    ->setTemplateId('jy7zpl98jyo45vx6')
-                    ->setSubject('Your NuAxess Invoice for June 2022')
+                    ->setTemplateId('3z0vklo6821l7qrx')
+                    ->setSubject('PAST-DUE Invoice for June 2022')
                     ->setAttachments($attachments);
 
                     $mailersend->email->send($emailParams);

@@ -53,20 +53,6 @@ if ($r[0]['c']=='0') {
     array_push($children,$child);
 }
 
-//-- User List
-//
-$sql="select count(*) as c from nua_exclude where user_id = " . $data['uid'] . " and func = 'USER-LIST'";
-$r=$X->sql($sql);
-if ($r[0]['c']=='0') {
-   $child=array();
-   $child['id']="db";
-   $child['title']="User List";
-   $child['type']="basic";
-   $child['icon']="heroicons_outline:clipboard-check";
-   $child['link']="/user-list";
-   array_push($children,$child);
-}
-
 //-- Company  List
 //
 $sql="select count(*) as c from nua_exclude where user_id = " . $data['uid'] . " and func = 'COMPANY-LIST'";
@@ -78,6 +64,34 @@ if ($r[0]['c']=='0') {
    $child['type']="basic";
    $child['icon']="heroicons_outline:clipboard-check";
    $child['link']="/company-list";
+   array_push($children,$child);
+}
+
+//-- Additions 
+//
+$sql="select count(*) as c from nua_exclude where user_id = " . $data['uid'] . " and func = 'ADDITIIONS'";
+$r=$X->sql($sql);
+if ($r[0]['c']=='0') {
+   $child=array();
+   $child['id']="db";
+   $child['title']="Addtions";
+   $child['type']="basic";
+   $child['icon']="heroicons_outline:clipboard-check";
+   $child['link']="/current-additions";
+   array_push($children,$child);
+}
+
+//-- Terminations 
+//
+$sql="select count(*) as c from nua_exclude where user_id = " . $data['uid'] . " and func = 'ADDITIIONS'";
+$r=$X->sql($sql);
+if ($r[0]['c']=='0') {
+   $child=array();
+   $child['id']="db";
+   $child['title']="Terminations";
+   $child['type']="basic";
+   $child['icon']="heroicons_outline:clipboard-check";
+   $child['link']="/current-terminations";
    array_push($children,$child);
 }
 
@@ -109,17 +123,17 @@ if ($r[0]['c']=='0') {
    array_push($children,$child);
 }
 
-//-- Add User 
+//-- User List
 //
-$sql="select count(*) as c from nua_exclude where user_id = " . $data['uid'] . " and func = 'ADD-USER'";
+$sql="select count(*) as c from nua_exclude where user_id = " . $data['uid'] . " and func = 'USER-LIST'";
 $r=$X->sql($sql);
 if ($r[0]['c']=='0') {
    $child=array();
    $child['id']="db";
-   $child['title']="Add User";
+   $child['title']="User List";
    $child['type']="basic";
    $child['icon']="heroicons_outline:clipboard-check";
-   $child['link']="/add-user";
+   $child['link']="/user-list";
    array_push($children,$child);
 }
 
